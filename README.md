@@ -1,6 +1,6 @@
-# Hermes Desktop (Debian 13 Trixie + KasmVNC + Openbox)
+# Hermes Desktop (Debian 12 Bookworm + KasmVNC + Openbox)
 
-基于 Debian 13 (Trixie) 的轻量级 X11 / KasmVNC 桌面环境容器，支持 Playwright 自动化测试、Python 隔离虚拟环境（PEP 668）以及中文语言支持。
+基于 Debian 12 (Bookworm) 的轻量级 X11 / KasmVNC 桌面环境容器，支持 Playwright 自动化测试、Python 隔离虚拟环境（PEP 668）以及中文语言支持。
 
 已全面改造为 **Root 单用户运行** 与 **多实例无缝扩展架构**，彻底避免宿主机挂载卷的权限冲突。
 

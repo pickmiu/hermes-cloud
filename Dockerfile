@@ -1,4 +1,4 @@
-FROM debian:trixie-slim
+FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DISPLAY=:1
@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-wqy-zenhei \
     ca-certificates \
     libssl-dev \
+    ssl-cert \
     dbus-x11 \
     xauth \
     x11-xserver-utils \
@@ -33,7 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 生成中文字符集
 RUN echo "zh_CN.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
-# 2. 安装官方 Google Chrome（采用 Debian 13 标准 keyrings 路径）
+# 2. 安装官方 Google Chrome（采用 Debian 标准 keyrings 路径）
 RUN mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg \
     && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
@@ -42,11 +43,13 @@ RUN mkdir -p /etc/apt/keyrings \
     && sed -i 's|exec -a "$0" "$HERE/chrome" "$@"|exec -a "$0" "$HERE/chrome" "$@" --no-sandbox|g' /opt/google/chrome/google-chrome \
     && rm -rf /var/lib/apt/lists/*
 
-# 3. 安装 KasmVNC
+# 3. 安装 KasmVNC 及其依赖
 RUN ARCH=$(dpkg --print-architecture) && \
     wget -q https://github.com/kasmtech/KasmVNC/releases/download/v1.3.2/kasmvncserver_bookworm_1.3.2_${ARCH}.deb -O /tmp/kasmvnc.deb \
-    && (dpkg -i /tmp/kasmvnc.deb || apt-get install -y -f) \
-    && rm -rf /tmp/kasmvnc.deb /var/lib/apt/lists/*
+    && apt-get update \
+    && apt-get install -y --no-install-recommends /tmp/kasmvnc.deb \
+    && rm -rf /tmp/kasmvnc.deb /var/lib/apt/lists/* \
+    && adduser root ssl-cert 2>/dev/null || true
 
 # 4. 预创建工作目录与配置目录
 RUN mkdir -p /root/workspace /root/.config/google-chrome /root/.vnc
