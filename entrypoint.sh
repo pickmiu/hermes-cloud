@@ -28,6 +28,10 @@ model:
 openrouter:
   api_key: ${OPENROUTER_API_KEY}
   model: ${HERMES_MODEL:-z-ai/glm-5.3-flash}
+terminal:
+  backend: local
+browser:
+  headless: false
 EOF
     fi
 fi
