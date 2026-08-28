@@ -100,7 +100,24 @@ docker compose exec -it hermes-desktop-1 bash
 docker compose exec -it hermes-desktop-2 bash
 ```
 
-### 2. 验证 Playwright 自动化测试
+### 2. 使用 Hermes Agent (Nous Research)
+
+容器内已预装并注册官方 `hermes` CLI 工具：
+
+* **启动配置向导（设置 LLM API Key、模型等）**：
+  ```bash
+  hermes setup
+  ```
+* **启动 Hermes Agent 对话**：
+  ```bash
+  hermes
+  ```
+* **管理 Telegram / Discord 消息网关**：
+  ```bash
+  hermes gateway
+  ```
+
+### 3. 验证 Playwright 自动化测试
 
 在容器内直接运行 Python 自动化脚本（虚拟环境已自动加载到 `PATH`）：
 

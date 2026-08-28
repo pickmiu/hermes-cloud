@@ -28,10 +28,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     nodejs \
     npm \
-    xz-utils \
-    unzip \
-    bzip2 \
-    tar \
     libswitch-perl \
     libyaml-tiny-perl \
     libhash-merge-simple-perl \
@@ -65,14 +61,16 @@ RUN mkdir -p /root/workspace /root/.config/google-chrome /root/.vnc
 
 WORKDIR /root
 
-# 5. 构建 Python 隔离虚拟环境（适配 Debian PEP 668 要求）
+# 5. 构建 Python 隔离虚拟环境并集成安装 Hermes Agent (Nous Research)
 RUN python3 -m venv /root/venv \
     && /root/venv/bin/pip install --no-cache-dir --upgrade pip \
     && /root/venv/bin/pip install --no-cache-dir \
        playwright \
        browser-use \
        httpx \
-       python-telegram-bot
+       python-telegram-bot \
+    && git clone --depth 1 https://github.com/NousResearch/hermes-agent.git /opt/hermes-agent \
+    && /root/venv/bin/pip install --no-cache-dir -e /opt/hermes-agent
 
 ENV PATH="/root/venv/bin:$PATH"
 
