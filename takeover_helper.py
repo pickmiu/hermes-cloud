@@ -226,21 +226,15 @@ def request_human_takeover(reason: str) -> dict:
     screenshot_path = capture_desktop_screenshot()
     action_id = f"tk_{int(time.time())}"
 
-    url_line = f"🔗 <b>桌面直达</b>：<a href=\"{desktop_url}\">{desktop_url}</a>\n\n" if desktop_url else ""
-    caption = (
-        f"<b>💻 Computer | ✳️ Action needed</b>\n\n"
-        f"📌 <b>事项</b>：{reason}\n"
-        f"{url_line}"
-        f"<i>请点击下方按钮接管桌面，完成后点击【I'm done】继续。</i>"
-    )
+    caption = f"<b>Computer</b>        ✳️ <i>Action needed</i>\n\n{reason}"
 
     inline_keyboard = []
     if desktop_url:
-        inline_keyboard.append([{"text": "🖥️ Take over (进入桌面)", "url": desktop_url}])
+        inline_keyboard.append([{"text": "Take over", "url": desktop_url}])
     
     inline_keyboard.append([
-        {"text": "✅ I'm done (我已完成)", "callback_data": f"takeover:done:{action_id}"},
-        {"text": "⏭️ Skip (跳过)", "callback_data": f"takeover:skip:{action_id}"}
+        {"text": "I'm done", "callback_data": f"takeover:done:{action_id}"},
+        {"text": "Skip", "callback_data": f"takeover:skip:{action_id}"}
     ])
 
     reply_markup = {"inline_keyboard": inline_keyboard}
@@ -265,10 +259,7 @@ def request_human_takeover(reason: str) -> dict:
 
             return {
                 "status": "success",
-                "message": (
-                    f"已成功向 Telegram 发送带截图与接管按钮的交互卡片（事项：{reason}）。\n"
-                    f"请等待用户在 Telegram 点击 [I'm done] 或 [Skip] 按钮通知继续。"
-                ),
+                "message": "Takeover card displayed. Please stay completely silent and wait for the user to click the button on Telegram.",
                 "action_id": action_id,
                 "message_id": msg_id
             }
@@ -302,7 +293,6 @@ def resolve_takeover(action_id: str = None, action: str = "done", callback_query
     chat_id = state.get("chat_id")
     message_id = state.get("message_id")
     reason = state.get("reason", "远程桌面操作")
-    desktop_url = state.get("desktop_url", "")
 
     # 1. 弹出轻提示
     if callback_query_id:
@@ -314,19 +304,9 @@ def resolve_takeover(action_id: str = None, action: str = "done", callback_query
 
     # 2. 原地更新 Caption 并移除所有按钮
     if action == "done":
-        new_caption = (
-            f"<b>💻 Computer | ✅ Takeover Completed</b>\n\n"
-            f"📌 <b>事项</b>：{reason} <i>(人类已完成接管)</i>\n"
-            f"🔗 <b>桌面直达</b>：<a href=\"{desktop_url}\">{desktop_url}</a>\n\n"
-            f"✨ <i>Hermes 已接收到信号，正在恢复自动化流程...</i>"
-        )
+        new_caption = f"<b>Computer</b>        ✅ <i>Takeover Completed</i>\n\n{reason}"
     else:
-        new_caption = (
-            f"<b>💻 Computer | ⏭️ Skipped</b>\n\n"
-            f"📌 <b>事项</b>：{reason} <i>(已跳过)</i>\n"
-            f"🔗 <b>桌面直达</b>：<a href=\"{desktop_url}\">{desktop_url}</a>\n\n"
-            f"✨ <i>Hermes 已跳过此操作。</i>"
-        )
+        new_caption = f"<b>Computer</b>        ⏭️ <i>Skipped</i>\n\n{reason}"
 
     try:
         edit_telegram_caption(token, chat_id, message_id, new_caption, reply_markup={"inline_keyboard": []})
