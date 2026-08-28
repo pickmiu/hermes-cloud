@@ -23,6 +23,13 @@ if [ "$DISABLE_AUTH" = "true" ] || [ "$VNC_PASSWORD" = "none" ]; then
     echo "KasmVNC: Basic Auth disabled (Passwordless direct login enabled)"
 fi
 
+# 确保 Google Chrome 具备静默自动化与 CDP 远程调试权限（消除 Allow remote debugging 弹窗）
+if [ -f /opt/google/chrome/google-chrome ]; then
+    if ! grep -q "remote-debugging-port=9222" /opt/google/chrome/google-chrome 2>/dev/null; then
+        sed -i 's|exec -a "$0" "$HERE/chrome" "$@"|exec -a "$0" "$HERE/chrome" "$@" --no-sandbox --remote-debugging-port=9222 --remote-allow-origins=* --test-type --disable-infobars|g' /opt/google/chrome/google-chrome 2>/dev/null || true
+    fi
+fi
+
 # 自动初始化 Hermes Agent 配置（OpenRouter + Browser Use + Telegram + Firecrawl）
 mkdir -p /root/.hermes
 > /root/.hermes/.env

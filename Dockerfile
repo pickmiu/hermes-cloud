@@ -45,7 +45,7 @@ RUN mkdir -p /etc/apt/keyrings \
     && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends google-chrome-stable \
-    && sed -i 's|exec -a "$0" "$HERE/chrome" "$@"|exec -a "$0" "$HERE/chrome" "$@" --no-sandbox|g' /opt/google/chrome/google-chrome \
+    && sed -i 's|exec -a "$0" "$HERE/chrome" "$@"|exec -a "$0" "$HERE/chrome" "$@" --no-sandbox --remote-debugging-port=9222 --remote-allow-origins=* --test-type --disable-infobars|g' /opt/google/chrome/google-chrome \
     && rm -rf /var/lib/apt/lists/*
 
 # 3. 安装 KasmVNC 及其依赖
