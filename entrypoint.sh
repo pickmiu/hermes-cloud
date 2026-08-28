@@ -12,9 +12,15 @@ if command -v dbus-launch >/dev/null 2>&1; then
     eval $(dbus-launch --sh-syntax)
 fi
 
-# 初始化密码
-VNC_PWD=${VNC_PASSWORD:-"hermes"}
-echo -e "$VNC_PWD\n$VNC_PWD" | vncpasswd -u root -w
+# 初始化密码或配置免密模式
+AUTH_FLAGS=""
+if [ "$DISABLE_AUTH" = "true" ] || [ "$VNC_PASSWORD" = "none" ] || [ -z "$VNC_PASSWORD" ]; then
+    AUTH_FLAGS="-disableBasicAuth"
+    echo "KasmVNC: Basic Auth disabled (Passwordless direct login enabled)"
+else
+    VNC_PWD=${VNC_PASSWORD:-"hermes"}
+    echo -e "$VNC_PWD\n$VNC_PWD" | vncpasswd -u root -w
+fi
 
 # 自动初始化 Hermes Agent 配置（OpenRouter + Browser Use + Telegram + Firecrawl）
 mkdir -p /root/.hermes
@@ -83,8 +89,8 @@ exec startxfce4
 EOF
 chmod +x /root/.vnc/xstartup
 
-# 启动 KasmVNC 服务（DISPLAY :1，端口 8444，指定 xfce 避免进入终端交互菜单）
-vncserver :1 -geometry 1440x900 -depth 24 -websocketPort 8444 -interface 0.0.0.0 -select-de xfce
+# 启动 KasmVNC 服务（DISPLAY :1，端口 8444，指定 xfce 避免进入终端交互菜单，按需支持免密）
+vncserver :1 -geometry 1440x900 -depth 24 -websocketPort 8444 -interface 0.0.0.0 -select-de xfce $AUTH_FLAGS
 
 # 若配置了 Telegram Token，自动在后台启动 Hermes Telegram 网关
 if [ -n "$TELEGRAM_BOT_TOKEN" ]; then

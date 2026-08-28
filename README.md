@@ -31,12 +31,12 @@
 docker compose up -d --build
 ```
 
-* **Web 访问地址**：`https://<你的IP>:8444`
-* **用户名**：`root`
-* **默认密码**：`hermes` （可在 `.env` 中修改 `VNC_PASSWORD_1`）
+* **Web 访问地址**：`https://<你的IP>:8444`（默认开启**免密一键直达**，点开链接直接进入桌面，无需输入账号密码）
+* **密码保护控制**：默认 `DISABLE_AUTH=true`（免密直连）；若需开启密码保护，可在 `.env` 中设置 `DISABLE_AUTH=false`，用户名固定为 `root`，默认密码为 `hermes`。
 * **数据目录**：
   * `./data/instance-1/workspace` -> `/root/workspace`
   * `./data/instance-1/chrome-data` -> `/root/.config/google-chrome`
+  * `./data/instance-1/hermes` -> `/root/.hermes`
 
 ---
 
@@ -116,7 +116,7 @@ FIRECRAWL_API_KEY=fc-xxxxxxxxxxxxxxxxxxxx
 
 # Telegram 机器人配置
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ
-TELEGRAM_ALLOWED_USERS=123456789
+TELEGRAM_ALLOWED_USERS=5123242428
 ```
 > **自动后台运行**：只要在 `.env` 中配置了 `TELEGRAM_BOT_TOKEN`，容器启动时会自动在后台拉起 `hermes gateway run`。您无需登录服务器，直接在手机 Telegram 上向您的机器人发送指令，Hermes 即可自动执行网页操作并回复结果！
 

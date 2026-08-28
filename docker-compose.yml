@@ -16,6 +16,7 @@ services:
     ports:
       - "${PORT_INSTANCE_1:-8444}:8444"
     environment:
+      - DISABLE_AUTH=${DISABLE_AUTH:-true}
       - VNC_PASSWORD=${VNC_PASSWORD_1:-hermes}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - HERMES_MODEL=${HERMES_MODEL:-z-ai/glm-5.3-flash}
@@ -41,6 +42,7 @@ services:
     ports:
       - "${PORT_INSTANCE_2:-8445}:8444"
     environment:
+      - DISABLE_AUTH=${DISABLE_AUTH:-true}
       - VNC_PASSWORD=${VNC_PASSWORD_2:-hermes}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - HERMES_MODEL=${HERMES_MODEL:-z-ai/glm-5.3-flash}
