@@ -26,11 +26,11 @@ mkdir -p /root/.hermes
 
 cat << EOF > /root/.hermes/config.yaml
 provider: openrouter
-model:
-  default: ${HERMES_MODEL:-z-ai/glm-5.3-flash}
+model: "${HERMES_MODEL:-z-ai/glm-5.3-flash}"
+default_model: "${HERMES_MODEL:-z-ai/glm-5.3-flash}"
 openrouter:
-  api_key: ${OPENROUTER_API_KEY}
-  model: ${HERMES_MODEL:-z-ai/glm-5.3-flash}
+  api_key: "${OPENROUTER_API_KEY}"
+  default_model: "${HERMES_MODEL:-z-ai/glm-5.3-flash}"
 terminal:
   backend: local
 browser:
