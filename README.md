@@ -100,31 +100,40 @@ docker compose exec -it hermes-desktop-1 bash
 docker compose exec -it hermes-desktop-2 bash
 ```
 
-### 2. 使用 Hermes Agent (Nous Research)
+### 2. 使用 Hermes Agent 与 Telegram 机器人
 
-容器内已预设 **OpenRouter** 与 **`z-ai/glm-5.3-flash`** 模型支持。
+容器内已预设 **OpenRouter (`z-ai/glm-5.3-flash`)**、**`Browser Use` 浏览器引擎**、**Firecrawl Web 搜索与内容抓取** 与 **Telegram Bot 7x24h 远程网关**。
 
 #### 配置方式（推荐通过 `.env`）：
-在宿主机项目根目录的 `.env` 中填入您的 OpenRouter API Key：
+在宿主机项目根目录的 `.env` 中填入：
 ```bash
-OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxx
+# 模型配置
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxx
 HERMES_MODEL=z-ai/glm-5.3-flash
-```
-容器启动时会自动将 OpenRouter 及该模型写入 `/root/.hermes/config.yaml`。
 
-#### 常用命令：
-进入容器后可直接使用：
-* **启动 Hermes Agent 对话**（开箱即用，已绑定预设模型）：
+# Web 搜索与内容抓取 (Firecrawl)
+FIRECRAWL_API_KEY=fc-xxxxxxxxxxxxxxxxxxxx
+
+# Telegram 机器人配置
+TELEGRAM_BOT_TOKEN=1234567890:ABCdefGhIJKlmNoPQRsTUVwxyZ
+TELEGRAM_ALLOWED_USERS=123456789
+```
+> **自动后台运行**：只要在 `.env` 中配置了 `TELEGRAM_BOT_TOKEN`，容器启动时会自动在后台拉起 `hermes gateway run`。您无需登录服务器，直接在手机 Telegram 上向您的机器人发送指令，Hermes 即可自动执行网页操作并回复结果！
+
+#### 命令行交互：
+* **进入容器终端直接与 Agent 对话**：
   ```bash
+  docker compose exec -it hermes-desktop-1 bash
   hermes
   ```
-* **重新配置向导（可切换模型或追加工具）**：
+* **查看 Telegram 机器人网关日志**：
   ```bash
-  hermes setup
+  docker compose exec -it hermes-desktop-1 cat /root/.hermes/gateway.log
   ```
-* **管理 Telegram / Discord 消息网关**：
+* **手动管理网关**：
   ```bash
-  hermes gateway
+  hermes gateway status
+  hermes gateway restart
   ```
 
 ### 3. 验证 Playwright 自动化测试

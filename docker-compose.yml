@@ -19,6 +19,9 @@ services:
       - VNC_PASSWORD=${VNC_PASSWORD_1:-hermes}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - HERMES_MODEL=${HERMES_MODEL:-z-ai/glm-5.3-flash}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS:-}
     volumes:
       - ./data/instance-1/workspace:/root/workspace
       - ./data/instance-1/chrome-data:/root/.config/google-chrome
@@ -41,6 +44,9 @@ services:
       - VNC_PASSWORD=${VNC_PASSWORD_2:-hermes}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - HERMES_MODEL=${HERMES_MODEL:-z-ai/glm-5.3-flash}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS:-}
     volumes:
       - ./data/instance-2/workspace:/root/workspace
       - ./data/instance-2/chrome-data:/root/.config/google-chrome
