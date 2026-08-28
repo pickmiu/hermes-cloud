@@ -20,8 +20,7 @@ echo -e "$VNC_PWD\n$VNC_PWD" | vncpasswd -u root -w
 mkdir -p /root/.hermes
 if [ -n "$OPENROUTER_API_KEY" ]; then
     echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" > /root/.hermes/.env
-    if [ ! -f /root/.hermes/config.yaml ]; then
-        cat << EOF > /root/.hermes/config.yaml
+    cat << EOF > /root/.hermes/config.yaml
 provider: openrouter
 model:
   default: ${HERMES_MODEL:-z-ai/glm-5.3-flash}
@@ -31,9 +30,9 @@ openrouter:
 terminal:
   backend: local
 browser:
+  provider: browser-use
   headless: false
 EOF
-    fi
 fi
 
 # 确保登录终端自动加载环境变量
