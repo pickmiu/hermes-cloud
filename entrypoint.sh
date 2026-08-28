@@ -12,13 +12,13 @@ if command -v dbus-launch >/dev/null 2>&1; then
     eval $(dbus-launch --sh-syntax)
 fi
 
-# 始终初始化 root 密码文件（KasmVNC 底层依赖此凭据文件）
+# 初始化基础密码文件（KasmVNC 强制要求密码文件存在）
 VNC_PWD=${VNC_PASSWORD:-"hermes"}
 echo -e "$VNC_PWD\n$VNC_PWD" | vncpasswd -u root -w
 
-# 配置免密直连模式
+# 配置是否禁用 Basic 认证（免密模式）
 AUTH_FLAGS=""
-if [ "${DISABLE_AUTH:-true}" = "true" ] || [ "$VNC_PASSWORD" = "none" ]; then
+if [ "$DISABLE_AUTH" = "true" ] || [ "$VNC_PASSWORD" = "none" ]; then
     AUTH_FLAGS="-disableBasicAuth"
     echo "KasmVNC: Basic Auth disabled (Passwordless direct login enabled)"
 fi
