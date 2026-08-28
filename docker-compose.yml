@@ -18,7 +18,7 @@ services:
     ports:
       - "${PORT_INSTANCE_1:-8444}:8444"
     environment:
-      - VNC_PASSWORD=${VNC_PASSWORD_1:-HermesSecretPass123}
+      - VNC_PASSWORD=${VNC_PASSWORD_1:-123456}
     volumes:
       - ./data/instance-1/workspace:/root/workspace
       - ./data/instance-1/chrome-data:/root/.config/google-chrome
@@ -37,7 +37,7 @@ services:
     ports:
       - "${PORT_INSTANCE_2:-8445}:8444"
     environment:
-      - VNC_PASSWORD=${VNC_PASSWORD_2:-HermesSecretPass123}
+      - VNC_PASSWORD=${VNC_PASSWORD_2:-123456}
     volumes:
       - ./data/instance-2/workspace:/root/workspace
       - ./data/instance-2/chrome-data:/root/.config/google-chrome

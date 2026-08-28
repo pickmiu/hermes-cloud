@@ -33,7 +33,7 @@ docker compose up -d --build
 
 * **Web 访问地址**：`https://<你的IP>:8444`
 * **用户名**：`root`
-* **默认密码**：`HermesSecretPass123` （可在 `.env` 中修改 `VNC_PASSWORD_1`）
+* **默认密码**：`123456` （可在 `.env` 中修改 `VNC_PASSWORD_1`）
 * **数据目录**：
   * `./data/instance-1/workspace` -> `/root/workspace`
   * `./data/instance-1/chrome-data` -> `/root/.config/google-chrome`
@@ -78,7 +78,7 @@ docker compose --profile multi up -d
     ports:
       - "8446:8444"
     environment:
-      - VNC_PASSWORD=${VNC_PASSWORD_3:-HermesSecretPass123}
+      - VNC_PASSWORD=${VNC_PASSWORD_3:-123456}
     volumes:
       - ./data/instance-3/workspace:/root/workspace
       - ./data/instance-3/chrome-data:/root/.config/google-chrome
