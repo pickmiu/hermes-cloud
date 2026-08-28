@@ -4,8 +4,11 @@ set -e
 # 清理可能残留的 X11 锁文件与旧日志（解决容器重启启动失败问题）
 rm -rf /tmp/.X1-lock /tmp/.X11-unix/X1 /root/.vnc/*.pid /root/.vnc/*.log
 
+export DISPLAY=:1
+export PATH="/root/venv/bin:$PATH"
+
 # 创建 VNC 运行时目录与 Hermes 配置目录
-mkdir -p /root/.vnc /root/.hermes /root/.hermes/custom_tools
+mkdir -p /root/.vnc /root/.hermes /root/.hermes/custom_tools /root/.hermes/skills/request_human_takeover /root/workspace
 
 # 初始化 DBus Session 会话环境
 if command -v dbus-launch >/dev/null 2>&1; then
@@ -25,6 +28,7 @@ fi
 
 # 自动初始化 Hermes Agent 配置（OpenRouter + Browser Use + Telegram + Firecrawl + Takeover Protocol）
 > /root/.hermes/.env
+echo "DISPLAY=:1" >> /root/.hermes/.env
 [ -n "$OPENROUTER_API_KEY" ] && echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" >> /root/.hermes/.env
 [ -n "$TELEGRAM_BOT_TOKEN" ] && echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> /root/.hermes/.env
 [ -n "$TELEGRAM_ALLOWED_USERS" ] && echo "TELEGRAM_ALLOWED_USERS=$TELEGRAM_ALLOWED_USERS" >> /root/.hermes/.env
@@ -46,6 +50,15 @@ browser:
 web:
   search_backend: firecrawl
   extract_backend: firecrawl
+system_prompt: |
+  你是部署在具备完整 X11 桌面与浏览器环境的自主 AI 智能体 Hermes。
+  【重要人机协作准则】
+  你在操作浏览器执行任务时，遇到需要登录认证（如淘宝/京东/微信扫码登录）、短信验证码、或复杂无法绕过的人机验证码时：
+  1. 允许自主尝试 1~2 次；
+  2. 若无法自主突破，你必须立即使用 request_human_takeover 技能，在终端执行：
+     python3 /root/takeover_helper.py request "<需要人类协助的具体事项说明>"
+  3. 这会立即截取当前桌面最新画面，并向用户的 Telegram 发送带远程桌面直达链接及 [Take over]、[I'm done] 按钮的交互卡片。
+  4. 发送后，请告知用户已发送接管卡片，并耐心等待用户在 Telegram 上点击按钮，切勿盲目重复重试。
 custom_tools:
   - name: request_human_takeover
     description: "当遇到必须人类介入（如扫码登录、手机短信验证码、复杂人机校验）且自主尝试无法解决时调用此工具向用户 Telegram 发送桌面截图与接管按钮卡片。"
@@ -88,6 +101,57 @@ EOF
     fi
 fi
 
+# 写入 Hermes 专属 Skill 技能文档（agentskills.io 标准）
+cat << 'EOF' > /root/.hermes/skills/request_human_takeover/SKILL.md
+---
+name: request_human_takeover
+description: 当遇到扫码登录（淘宝、支付宝、微信等）、短信验证码、手机授权、复杂人机验证码且自主尝试 1~2 次无法突破时，必须使用此技能向人类发送桌面截图和 Telegram 交互接管卡片。
+metadata:
+  version: 1.0.0
+---
+
+# Human Takeover Protocol (人机接管技能)
+
+## 触发条件
+当操作浏览器或执行任务遇到以下情况且自主尝试 1~2 次仍无法解决时：
+1. **扫码登录**：淘宝、京东、微信、支付宝等网页弹出登录二维码。
+2. **验证码阻拦**：复杂拼图、滑块、旋转验证码、短信验证码发到用户手机。
+3. **敏感操作**：支付密码、删除核心配置等。
+
+## 执行指令
+立即在终端中执行以下命令（将具体原因作为参数传入）：
+
+```bash
+python3 /root/takeover_helper.py request "<需要人类协助的具体事项说明>"
+```
+
+### 示例
+遇到淘宝登录时运行：
+```bash
+python3 /root/takeover_helper.py request "淘宝需要扫码登录，请点击下方 Take over 按钮进入桌面扫码"
+```
+
+## 执行后动作
+执行上述命令后：
+1. 系统已自动向用户 Telegram 发送了当前桌面最新截图与带 [Take over]、[I'm done]、[Skip] 按钮的卡片。
+2. 明确回复用户：“已为您发送接管卡片，请点击按钮进入桌面完成扫码，完成后点击【I'm done】”。
+3. **停止盲目重试，等待用户在 Telegram 点击按钮后的系统通知**。
+4. 收到通知后，重新获取最新页面状态并继续执行原任务。
+EOF
+
+# 写入工作区全局行为规范 (AGENTS.md)
+cat << 'EOF' > /root/workspace/AGENTS.md
+# Hermes Workspace Behavioral Rules
+
+## 核心准则：自主优先与人机接管 (Autonomous-First & Human Takeover)
+
+1. **自主尝试**：遇到常规表单登录或常规验证码，先自主尝试 1~2 次。
+2. **触发接管**：若遇到手机扫码（淘宝/微信/支付宝等）、短信验证码、支付或无法通过的验证码，严禁盲目重试，必须立即在终端运行：
+   `python3 /root/takeover_helper.py request "<说明原因>"`
+3. 执行后告知用户接管卡片已发送，并等待用户点击 Telegram 按钮。
+EOF
+cp /root/workspace/AGENTS.md /root/AGENTS.md 2>/dev/null || true
+
 # 写入 Hermes 专属人机协同与自主尝试协议 (SOUL.md)
 cat << 'EOF' > /root/.hermes/SOUL.md
 # Hermes Agent 核心行为与人机接管协议 (Autonomous-First & Human Takeover Protocol)
@@ -99,15 +163,15 @@ cat << 'EOF' > /root/.hermes/SOUL.md
 - 如果自主尝试成功并进入目标页面，直接继续执行任务，**无需打扰用户**。
 
 ## 2. 触发人类接管的条件 (Human Takeover Conditions)
-只有在判定为「无法自主完成」时，才允许调用 `request_human_takeover` 工具：
+只有在判定为「无法自主完成」时，才允许调用 `request_human_takeover` 技能：
 - **物理与设备阻隔**：必须手机 App 扫码（微信/支付宝/淘宝等二维码）、短信验证码发至用户手机、或需要支付密码与生物认证。
 - **自主尝试失败**：验证码识别失败或重试 1~2 次仍未通过，继续尝试可能导致封号或锁定时。
 - **环境被拦截**：遇到高强度无法绕过的人机验证盾（如 Cloudflare Turnstile）。
 
 ## 3. 接管调用规范
-- 调用 `request_human_takeover(reason="详细说明原因，例如：用淘宝扫码登录")`。
+- 在终端运行 `python3 /root/takeover_helper.py request "详细说明原因，例如：用淘宝扫码登录"`。
 - 系统会自动截取当前桌面画面，并向 Telegram 发送带接管 URL 与 [Take over]、[I'm done]、[Skip] 按钮的交互卡片。
-- **调用完成后，停止盲目重试，等待人类在 Telegram 上点击按钮**。
+- **调用完成后，停止盲目重试，告知用户卡片已发，等待人类在 Telegram 上点击按钮**。
 - 收到人类完成接管的通知后，重新抓取最新页面/屏幕状态，核验后继续完成原定任务。
 EOF
 
@@ -130,6 +194,8 @@ EOF
 
 # 确保登录终端自动加载环境变量
 grep -q "OPENROUTER_API_KEY" /root/.bashrc 2>/dev/null || cat << 'EOF' >> /root/.bashrc
+export DISPLAY=:1
+export PATH="/root/venv/bin:$PATH"
 [ -f /root/.hermes/.env ] && export $(cat /root/.hermes/.env | xargs 2>/dev/null)
 [ -n "$HERMES_MODEL" ] && export HERMES_MODEL="$HERMES_MODEL"
 [ -n "$FIRECRAWL_API_KEY" ] && export FIRECRAWL_API_KEY="$FIRECRAWL_API_KEY"
