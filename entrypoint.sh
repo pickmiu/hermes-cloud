@@ -56,12 +56,17 @@ EOF
 fi
 
 if [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+    HOME_UID="${TELEGRAM_ALLOWED_USERS%%,*}"
+    [ -n "$HOME_UID" ] && echo "TELEGRAM_HOME_CHANNEL=$HOME_UID" >> /root/.hermes/.env
     cat << EOF >> /root/.hermes/config.yaml
 platforms:
   telegram:
     enabled: true
     token: "${TELEGRAM_BOT_TOKEN}"
 EOF
+    if [ -n "$HOME_UID" ]; then
+        echo "    home_channel: \"$HOME_UID\"" >> /root/.hermes/config.yaml
+    fi
     if [ -n "$TELEGRAM_ALLOWED_USERS" ]; then
         echo "    allow_from:" >> /root/.hermes/config.yaml
         IFS=',' read -ra ADDR <<< "$TELEGRAM_ALLOWED_USERS"
