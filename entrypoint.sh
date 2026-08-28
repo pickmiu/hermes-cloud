@@ -13,7 +13,7 @@ if command -v dbus-launch >/dev/null 2>&1; then
 fi
 
 # 初始化密码
-VNC_PWD=${VNC_PASSWORD:-"123456"}
+VNC_PWD=${VNC_PASSWORD:-"hermes"}
 echo -e "$VNC_PWD\n$VNC_PWD" | vncpasswd -u root -w
 
 # 配置 X11 启动会话（直接启动 tint2 任务栏与 openbox 桌面）
