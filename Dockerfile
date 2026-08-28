@@ -50,7 +50,7 @@ RUN mkdir -p /etc/apt/keyrings \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /etc/opt/chrome/policies/managed \
     && echo '{"CommandLineFlagSecurityWarningsEnabled": false, "RemoteDebuggingAllowed": true}' > /etc/opt/chrome/policies/managed/managed_policies.json \
-    && printf '#!/bin/bash\nexport DISPLAY=${DISPLAY:-:1}\nexec /opt/google/chrome/chrome --no-sandbox --disable-dev-shm-usage --disable-gpu --remote-debugging-port=9222 --remote-allow-origins=* --user-data-dir="${CHROME_USER_DATA_DIR:-/root/.config/google-chrome}" --test-type --disable-infobars --no-first-run --no-default-browser-check "$@"\n' > /usr/local/bin/google-chrome \
+    && printf '#!/bin/bash\nexport DISPLAY=${DISPLAY:-:1}\nexec /opt/google/chrome/chrome --no-sandbox --disable-dev-shm-usage "$@"\n' > /usr/local/bin/google-chrome \
     && chmod +x /usr/local/bin/google-chrome \
     && ln -sf /usr/local/bin/google-chrome /usr/bin/google-chrome \
     && ln -sf /usr/local/bin/google-chrome /usr/bin/google-chrome-stable \

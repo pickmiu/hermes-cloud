@@ -14,22 +14,11 @@ export PATH="/root/venv/bin:$PATH"
 mkdir -p /etc/opt/chrome/policies/managed
 echo '{"CommandLineFlagSecurityWarningsEnabled": false, "RemoteDebuggingAllowed": true}' > /etc/opt/chrome/policies/managed/managed_policies.json
 
-# 确保系统级全局 Chrome 包装器就绪（强制附加完整 CDP 调试参数与非默认 user-data-dir，彻底杜绝 root 崩溃与授权弹窗）
+# 确保系统级全局 Chrome 包装器就绪（仅附加基础 --no-sandbox，允许动态传参且不独占端口）
 cat << 'EOF' > /usr/local/bin/google-chrome
 #!/bin/bash
 export DISPLAY=${DISPLAY:-:1}
-exec /opt/google/chrome/chrome \
-  --no-sandbox \
-  --disable-dev-shm-usage \
-  --disable-gpu \
-  --remote-debugging-port=9222 \
-  --remote-allow-origins=* \
-  --user-data-dir="${CHROME_USER_DATA_DIR:-/root/.config/google-chrome}" \
-  --test-type \
-  --disable-infobars \
-  --no-first-run \
-  --no-default-browser-check \
-  "$@"
+exec /opt/google/chrome/chrome --no-sandbox --disable-dev-shm-usage "$@"
 EOF
 chmod +x /usr/local/bin/google-chrome
 ln -sf /usr/local/bin/google-chrome /usr/bin/google-chrome
@@ -65,7 +54,7 @@ fi
 > /root/.hermes/.env
 echo "DISPLAY=:1" >> /root/.hermes/.env
 echo "AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable" >> /root/.hermes/.env
-echo "AGENT_BROWSER_ARGS=--no-sandbox,--disable-dev-shm-usage,--disable-gpu,--remote-debugging-port=9222,--remote-allow-origins=*,--user-data-dir=/root/.config/google-chrome,--test-type,--disable-infobars,--no-first-run,--no-default-browser-check,--display=:1" >> /root/.hermes/.env
+echo "AGENT_BROWSER_ARGS=--no-sandbox,--disable-dev-shm-usage,--display=:1" >> /root/.hermes/.env
 echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/google-chrome-stable" >> /root/.hermes/.env
 echo "CHROME_PATH=/usr/bin/google-chrome-stable" >> /root/.hermes/.env
 [ -n "$OPENROUTER_API_KEY" ] && echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" >> /root/.hermes/.env
@@ -93,16 +82,16 @@ web:
 system_prompt: |
   你是部署在具备完整 X11 桌面与浏览器环境的自主 AI 智能体 Hermes。
   【重要人机协作准则 - 静默极简原则】
-  你在操作浏览器执行任务时，遇到需要登录认证（如淘宝/京东/微信扫码登录）、短信验证码、浏览器授权弹窗、或复杂无法绕过的人机验证码时：
+  你在操作浏览器执行任务时，遇到需要登录认证（如淘宝/京东/微信扫码登录）、短信验证码、浏览器授权调试确认（如 chrome://inspect 勾选 Allow remote debugging）、或复杂无法绕过的人机验证码时：
   1. 允许自主尝试 1~2 次；
-  2. 若无法自主突破或需要人类在屏幕上点击授权/扫码，你必须直接在终端执行：
+  2. 若需要人类在屏幕上操作（例如勾选 Allow remote debugging 授权，或扫码登录），你必须直接在终端执行：
      python3 /root/takeover_helper.py request "<需要人类协助的具体事项说明>"
   3. 【极简防啰嗦规则】：
      - 严禁在调用前后输出长篇大论的解释、状态复述或重复追问！
-     - 调用后只需输出一句极简短语（例如：“登录页已就绪，把电脑交给你，扫码或输账号都行。”），然后立即保持静默，安静等待用户点击 Telegram 按钮。
+     - 调用后只需输出一句极简短语（例如：“请在接管画面中点击 Allow 授权调试，完成后继续。”），然后立即保持静默，安静等待用户点击 Telegram 按钮。
 custom_tools:
   - name: request_human_takeover
-    description: "当遇到必须人类介入（如扫码登录、手机短信验证码、浏览器授权弹窗、复杂人机校验）且自主尝试无法解决时调用此工具向用户 Telegram 发送桌面截图与接管按钮卡片。"
+    description: "当遇到必须人类介入（如扫码登录、手机短信验证码、浏览器调试授权、复杂人机校验）时调用此工具向用户 Telegram 发送桌面截图与接管按钮卡片。"
     parameters:
       type: object
       properties:
@@ -146,7 +135,7 @@ fi
 cat << 'EOF' > /root/.hermes/skills/request_human_takeover/SKILL.md
 ---
 name: request_human_takeover
-description: 当遇到扫码登录（淘宝、支付宝、微信等）、短信验证码、手机授权、浏览器弹窗授权、复杂人机验证码且自主尝试 1~2 次无法突破时，必须使用此技能向人类发送桌面截图和 Telegram 交互接管卡片。
+description: 当遇到扫码登录（淘宝、支付宝、微信等）、短信验证码、手机授权、浏览器调试授权（chrome://inspect 勾选 Allow remote debugging）、复杂人机验证码时，必须使用此技能向人类发送桌面截图和 Telegram 交互接管卡片。
 metadata:
   version: 1.0.0
 ---
@@ -154,10 +143,10 @@ metadata:
 # Human Takeover Protocol (极简人机接管技能)
 
 ## 触发条件
-当操作浏览器或执行任务遇到以下情况且自主尝试 1~2 次仍无法解决时：
-1. **扫码登录**：淘宝、京东、微信、支付宝等网页弹出登录二维码。
-2. **验证码阻拦**：复杂拼图、滑块、旋转验证码、短信验证码发到用户手机。
-3. **授权弹窗**：浏览器提示需要用户点击授权、或者页面弹出阻塞性弹窗。
+当操作浏览器或执行任务遇到以下情况时：
+1. **浏览器调试授权**：提示需要在 `chrome://inspect` 勾选 "Allow remote debugging for this browser instance" 或点击弹窗 Allow。
+2. **扫码登录**：淘宝、京东、微信、支付宝等网页弹出登录二维码。
+3. **验证码阻拦**：复杂拼图、滑块、旋转验证码、短信验证码发到用户手机。
 4. **敏感操作**：支付密码、删除核心配置等。
 
 ## 执行指令
@@ -168,6 +157,11 @@ python3 /root/takeover_helper.py request "<需要人类协助的具体事项说�
 ```
 
 ### 示例
+遇到调试授权时运行：
+```bash
+python3 /root/takeover_helper.py request "请在接管桌面中勾选 Allow remote debugging 并点击 Allow 授权"
+```
+
 遇到淘宝登录时运行：
 ```bash
 python3 /root/takeover_helper.py request "Log in to Taobao (scan QR or account + password)"
