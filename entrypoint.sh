@@ -29,7 +29,7 @@ EOF
 chmod +x /root/.vnc/xstartup
 
 # 启动 KasmVNC 服务（DISPLAY :1，端口 8444，指定 xfce 避免进入终端交互菜单）
-vncserver :1 -geometry 1440x900 -depth 24 -httpPort 8444 -interface 0.0.0.0 -select-de xfce
+vncserver :1 -geometry 1440x900 -depth 24 -websocketPort 8444 -interface 0.0.0.0 -select-de xfce
 
 # 等待日志文件生成，避免 tail -f 在文件不存在时引发 set -e 容器退出
 LOG_FILE=""
