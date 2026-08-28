@@ -1,5 +1,3 @@
-version: '3.8'
-
 # 通用基础配置（YAML 锚点，多实例共用底层镜像与资源配置）
 x-hermes-base: &hermes-base
   build: .
