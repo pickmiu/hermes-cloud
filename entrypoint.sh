@@ -23,6 +23,10 @@ if [ "$DISABLE_AUTH" = "true" ] || [ "$VNC_PASSWORD" = "none" ]; then
     echo "KasmVNC: Basic Auth disabled (Passwordless direct login enabled)"
 fi
 
+# 确保 Chrome 企业策略就绪（彻底关闭 CDP 远程调试授权弹窗与命令行警告）
+mkdir -p /etc/opt/chrome/policies/managed
+echo '{"CommandLineFlagSecurityWarningsEnabled": false, "RemoteDebuggingAllowed": true}' > /etc/opt/chrome/policies/managed/managed_policies.json
+
 # 自动初始化 Hermes Agent 配置（OpenRouter + Browser Use + Telegram + Firecrawl）
 mkdir -p /root/.hermes
 > /root/.hermes/.env
