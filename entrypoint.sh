@@ -4,8 +4,32 @@ set -e
 # 清理可能残留的 X11 锁文件与旧日志（解决容器重启启动失败问题）
 rm -rf /tmp/.X1-lock /tmp/.X11-unix/X1 /root/.vnc/*.pid /root/.vnc/*.log
 
+# 清理 Chrome 残留的单例锁文件（解决历史退出留下的 SingletonLock 导致的启动失败）
+rm -f /root/.config/google-chrome/Singleton* /root/.config/google-chrome/*/Singleton* /tmp/.org.chromium.Chromium.* 2>/dev/null || true
+
 export DISPLAY=:1
 export PATH="/root/venv/bin:$PATH"
+
+# 确保 Google Chrome 企业策略就绪（免除所有 CDP 弹窗与命令行警告）
+mkdir -p /etc/opt/chrome/policies/managed
+echo '{"CommandLineFlagSecurityWarningsEnabled": false, "RemoteDebuggingAllowed": true}' > /etc/opt/chrome/policies/managed/managed_policies.json
+
+# 确保系统级全局 Chrome 包装器就绪（强制附加 --no-sandbox，彻底杜绝 root 下启动崩溃）
+cat << 'EOF' > /usr/local/bin/google-chrome
+#!/bin/bash
+export DISPLAY=${DISPLAY:-:1}
+exec /opt/google/chrome/chrome --no-sandbox --disable-dev-shm-usage --disable-gpu "$@"
+EOF
+chmod +x /usr/local/bin/google-chrome
+ln -sf /usr/local/bin/google-chrome /usr/bin/google-chrome
+ln -sf /usr/local/bin/google-chrome /usr/bin/google-chrome-stable
+ln -sf /usr/local/bin/google-chrome /usr/bin/x-www-browser
+ln -sf /usr/local/bin/google-chrome /usr/bin/gnome-www-browser
+
+# 配置 XFCE 默认首选浏览器
+mkdir -p /root/.config/xfce4 /etc/xdg/xfce4
+echo "WebBrowser=google-chrome" > /root/.config/xfce4/helpers.rc
+echo "WebBrowser=google-chrome" > /etc/xdg/xfce4/helpers.rc
 
 # 创建 VNC 运行时目录与 Hermes 配置目录
 mkdir -p /root/.vnc /root/.hermes /root/.hermes/custom_tools /root/.hermes/skills/request_human_takeover /root/workspace

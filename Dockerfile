@@ -47,8 +47,17 @@ RUN mkdir -p /etc/apt/keyrings \
     && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends google-chrome-stable \
-    && sed -i 's|exec -a "$0" "$HERE/chrome" "$@"|exec -a "$0" "$HERE/chrome" "$@" --no-sandbox|g' /opt/google/chrome/google-chrome \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /etc/opt/chrome/policies/managed \
+    && echo '{"CommandLineFlagSecurityWarningsEnabled": false, "RemoteDebuggingAllowed": true}' > /etc/opt/chrome/policies/managed/managed_policies.json \
+    && printf '#!/bin/bash\nexport DISPLAY=${DISPLAY:-:1}\nexec /opt/google/chrome/chrome --no-sandbox --disable-dev-shm-usage --disable-gpu "$@"\n' > /usr/local/bin/google-chrome \
+    && chmod +x /usr/local/bin/google-chrome \
+    && ln -sf /usr/local/bin/google-chrome /usr/bin/google-chrome \
+    && ln -sf /usr/local/bin/google-chrome /usr/bin/google-chrome-stable \
+    && ln -sf /usr/local/bin/google-chrome /usr/bin/x-www-browser \
+    && ln -sf /usr/local/bin/google-chrome /usr/bin/gnome-www-browser \
+    && mkdir -p /etc/xdg/xfce4 \
+    && echo "WebBrowser=google-chrome" > /etc/xdg/xfce4/helpers.rc
 
 # 3. 安装 KasmVNC 及其依赖
 RUN ARCH=$(dpkg --print-architecture) && \
