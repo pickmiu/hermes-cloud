@@ -61,11 +61,10 @@ RUN mkdir -p /root/workspace /root/.config/google-chrome /root/.vnc
 
 WORKDIR /root
 
-# 5. 构建 Python 隔离虚拟环境（适配 Debian PEP 668 要求，使用国内源与 --no-compile 极速构建）
+# 5. 构建 Python 隔离虚拟环境（适配 Debian PEP 668 要求）
 RUN python3 -m venv /root/venv \
-    && /root/venv/bin/pip install --no-cache-dir --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple \
-    && /root/venv/bin/pip install --no-cache-dir --no-compile \
-       -i https://pypi.tuna.tsinghua.edu.cn/simple \
+    && /root/venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /root/venv/bin/pip install --no-cache-dir \
        playwright \
        browser-use \
        httpx \
