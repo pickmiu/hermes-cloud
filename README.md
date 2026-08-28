@@ -102,15 +102,25 @@ docker compose exec -it hermes-desktop-2 bash
 
 ### 2. 使用 Hermes Agent (Nous Research)
 
-容器内已预装并注册官方 `hermes` CLI 工具：
+容器内已预设 **OpenRouter** 与 **`z-ai/glm-5.3-flash`** 模型支持。
 
-* **启动配置向导（设置 LLM API Key、模型等）**：
-  ```bash
-  hermes setup
-  ```
-* **启动 Hermes Agent 对话**：
+#### 配置方式（推荐通过 `.env`）：
+在宿主机项目根目录的 `.env` 中填入您的 OpenRouter API Key：
+```bash
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxx
+HERMES_MODEL=z-ai/glm-5.3-flash
+```
+容器启动时会自动将 OpenRouter 及该模型写入 `/root/.hermes/config.yaml`。
+
+#### 常用命令：
+进入容器后可直接使用：
+* **启动 Hermes Agent 对话**（开箱即用，已绑定预设模型）：
   ```bash
   hermes
+  ```
+* **重新配置向导（可切换模型或追加工具）**：
+  ```bash
+  hermes setup
   ```
 * **管理 Telegram / Discord 消息网关**：
   ```bash

@@ -16,6 +16,28 @@ fi
 VNC_PWD=${VNC_PASSWORD:-"hermes"}
 echo -e "$VNC_PWD\n$VNC_PWD" | vncpasswd -u root -w
 
+# 自动初始化 Hermes Agent 配置（如果配置了 OPENROUTER_API_KEY）
+mkdir -p /root/.hermes
+if [ -n "$OPENROUTER_API_KEY" ]; then
+    echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" > /root/.hermes/.env
+    if [ ! -f /root/.hermes/config.yaml ]; then
+        cat << EOF > /root/.hermes/config.yaml
+provider: openrouter
+model:
+  default: ${HERMES_MODEL:-z-ai/glm-5.3-flash}
+openrouter:
+  api_key: ${OPENROUTER_API_KEY}
+  model: ${HERMES_MODEL:-z-ai/glm-5.3-flash}
+EOF
+    fi
+fi
+
+# 确保登录终端自动加载环境变量
+grep -q "OPENROUTER_API_KEY" /root/.bashrc 2>/dev/null || cat << 'EOF' >> /root/.bashrc
+[ -f /root/.hermes/.env ] && export $(cat /root/.hermes/.env | xargs 2>/dev/null)
+[ -n "$HERMES_MODEL" ] && export HERMES_MODEL="$HERMES_MODEL"
+EOF
+
 # 配置 X11 启动会话（启动 XFCE 桌面）
 cat << 'EOF' > /root/.vnc/xstartup
 #!/bin/sh
