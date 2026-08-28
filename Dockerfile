@@ -6,7 +6,7 @@ ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:zh
 ENV LC_ALL=zh_CN.UTF-8
 
-# 1. 基础系统工具、中文字体、X11 轻量窗口环境与 KasmVNC Perl 依赖
+# 1. 基础系统工具、中文字体、轻量 XFCE 桌面环境与 KasmVNC Perl 依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     curl \
@@ -21,9 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dbus-x11 \
     xauth \
     x11-xserver-utils \
-    openbox \
-    tint2 \
-    xterm \
+    xfce4 \
+    xfce4-terminal \
     python3 \
     python3-pip \
     python3-venv \

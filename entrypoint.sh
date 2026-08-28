@@ -16,20 +16,20 @@ fi
 VNC_PWD=${VNC_PASSWORD:-"hermes"}
 echo -e "$VNC_PWD\n$VNC_PWD" | vncpasswd -u root -w
 
-# 配置 X11 启动会话（直接启动 tint2 任务栏与 openbox 桌面）
+# 配置 X11 启动会话（启动 XFCE 桌面）
 cat << 'EOF' > /root/.vnc/xstartup
-#!/bin/bash
+#!/bin/sh
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
 export LANG=zh_CN.UTF-8
 export LC_ALL=zh_CN.UTF-8
 [ -r $HOME/.Xresources ] && xrdb $HOME/.Xresources
-
-tint2 &
-exec openbox-session
+exec startxfce4
 EOF
 chmod +x /root/.vnc/xstartup
 
-# 启动 KasmVNC 服务（DISPLAY :1，端口 8444）
-vncserver :1 -geometry 1440x900 -depth 24 -httpPort 8444 -interface 0.0.0.0
+# 启动 KasmVNC 服务（DISPLAY :1，端口 8444，指定 xfce 避免进入终端交互菜单）
+vncserver :1 -geometry 1440x900 -depth 24 -httpPort 8444 -interface 0.0.0.0 -select-de xfce
 
 # 等待日志文件生成，避免 tail -f 在文件不存在时引发 set -e 容器退出
 LOG_FILE=""

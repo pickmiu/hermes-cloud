@@ -1,4 +1,4 @@
-# Hermes Desktop (Debian 12 Bookworm + KasmVNC + Openbox)
+# Hermes Desktop (Debian 12 Bookworm + KasmVNC + XFCE4)
 
 基于 Debian 12 (Bookworm) 的轻量级 X11 / KasmVNC 桌面环境容器，支持 Playwright 自动化测试、Python 隔离虚拟环境（PEP 668）以及中文语言支持。
 
@@ -10,8 +10,8 @@
 
 ```
 .
-├── Dockerfile              # Debian 13 基础镜像与环境构建文件
-├── entrypoint.sh           # 容器启动脚本（处理 DBus、VNC、Openbox 与日志）
+├── Dockerfile              # Debian 12 基础镜像与环境构建文件
+├── entrypoint.sh           # 容器启动脚本（处理 DBus、VNC、XFCE 与日志）
 ├── docker-compose.yml      # Docker Compose 服务定义文件（支持单/多实例）
 ├── .env.example            # 环境变量配置模板
 ├── .env                    # 实例端口与密码配置
