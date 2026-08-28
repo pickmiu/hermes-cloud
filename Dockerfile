@@ -28,6 +28,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     nodejs \
     npm \
+    xz-utils \
+    unzip \
+    bzip2 \
+    tar \
     libswitch-perl \
     libyaml-tiny-perl \
     libhash-merge-simple-perl \
