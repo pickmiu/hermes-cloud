@@ -18,6 +18,7 @@ services:
     environment:
       - DISABLE_AUTH=${DISABLE_AUTH:-true}
       - VNC_PASSWORD=${VNC_PASSWORD_1:-hermes}
+      - REMOTE_DESKTOP_URL=https://${PUBLIC_HOST:-localhost}:${PORT_INSTANCE_1:-8444}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - HERMES_MODEL=${HERMES_MODEL:-z-ai/glm-5.3-flash}
       - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
@@ -25,6 +26,7 @@ services:
       - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS:-}
     volumes:
       - ./entrypoint.sh:/root/entrypoint.sh
+      - ./takeover_helper.py:/root/takeover_helper.py
       - ./data/instance-1/workspace:/root/workspace
       - ./data/instance-1/chrome-data:/root/.config/google-chrome
       - ./data/instance-1/hermes:/root/.hermes
@@ -45,6 +47,7 @@ services:
     environment:
       - DISABLE_AUTH=${DISABLE_AUTH:-true}
       - VNC_PASSWORD=${VNC_PASSWORD_2:-hermes}
+      - REMOTE_DESKTOP_URL=https://${PUBLIC_HOST:-localhost}:${PORT_INSTANCE_2:-8445}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       - HERMES_MODEL=${HERMES_MODEL:-z-ai/glm-5.3-flash}
       - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
@@ -52,6 +55,7 @@ services:
       - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS:-}
     volumes:
       - ./entrypoint.sh:/root/entrypoint.sh
+      - ./takeover_helper.py:/root/takeover_helper.py
       - ./data/instance-2/workspace:/root/workspace
       - ./data/instance-2/chrome-data:/root/.config/google-chrome
       - ./data/instance-2/hermes:/root/.hermes

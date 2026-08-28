@@ -107,6 +107,9 @@ docker compose exec -it hermes-desktop-2 bash
 #### 配置方式（推荐通过 `.env`）：
 在宿主机项目根目录的 `.env` 中填入：
 ```bash
+# 外部访问公网 IP 或域名（用于自动生成远程接管链接）
+PUBLIC_HOST=43.130.29.47
+
 # 模型配置
 OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxx
 HERMES_MODEL=z-ai/glm-5.3-flash
@@ -120,11 +123,24 @@ TELEGRAM_ALLOWED_USERS=5123242428
 ```
 > **自动后台运行**：只要在 `.env` 中配置了 `TELEGRAM_BOT_TOKEN`，容器启动时会自动在后台拉起 `hermes gateway run`。您无需登录服务器，直接在手机 Telegram 上向您的机器人发送指令，Hermes 即可自动执行网页操作并回复结果！
 
-#### 命令行交互：
+#### 3. 智能人机接管（Human-in-the-Loop / Grok-bot 交互卡片）
+当 Hermes 在执行浏览器自动化任务时，遵循 **「自主优先尝试 ➔ 无法突破时交由人类接管」** 规范：
+1. **自主尝试**：遇到常规登录框、验证码时，优先自主尝试 1~2 次；
+2. **触发接管**：若遇到必须手机扫码、短信验证码或复杂人机拦截且无法自主完成时，Hermes 会自动向 Telegram 发送**桌面最新截图 + 专属操作卡片**：
+   * `[ 🖥️ Take over ]`：直接免密跳转对应实例的远程桌面网页；
+   * `[ ✅ I'm done ]`：人类在网页端扫码/验证完成后点击此按钮，卡片自动**原地更新**为 `✅ Takeover Completed` 并**移除按钮**，通知 Hermes 继续自动化任务；
+   * `[ ⏭️ Skip ]`：人类选择跳过此步骤。
+3. **零轮询占用**：采用 Telegram 原生 Callback 事件总线，不占用多余后台轮询线程。
+
+#### 命令行交互与调试：
 * **进入容器终端直接与 Agent 对话**：
   ```bash
   docker compose exec -it hermes-desktop-1 bash
   hermes
+  ```
+* **手动测试发送接管卡片**：
+  ```bash
+  docker compose exec -it hermes-desktop-1 python3 /root/takeover_helper.py request "测试淘宝扫码登录接管"
   ```
 * **查看 Telegram 机器人网关日志**：
   ```bash

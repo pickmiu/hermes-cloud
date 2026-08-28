@@ -23,6 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     x11-xserver-utils \
     xfce4 \
     xfce4-terminal \
+    scrot \
+    imagemagick \
     python3 \
     python3-pip \
     python3-venv \
@@ -46,8 +48,6 @@ RUN mkdir -p /etc/apt/keyrings \
     && apt-get update \
     && apt-get install -y --no-install-recommends google-chrome-stable \
     && sed -i 's|exec -a "$0" "$HERE/chrome" "$@"|exec -a "$0" "$HERE/chrome" "$@" --no-sandbox|g' /opt/google/chrome/google-chrome \
-    && mkdir -p /etc/opt/chrome/policies/managed \
-    && echo '{"CommandLineFlagSecurityWarningsEnabled": false, "RemoteDebuggingAllowed": true}' > /etc/opt/chrome/policies/managed/managed_policies.json \
     && rm -rf /var/lib/apt/lists/*
 
 # 3. 安装 KasmVNC 及其依赖
