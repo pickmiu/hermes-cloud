@@ -24,6 +24,7 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS:-}
     volumes:
+      - ./entrypoint.sh:/root/entrypoint.sh
       - ./data/instance-1/workspace:/root/workspace
       - ./data/instance-1/chrome-data:/root/.config/google-chrome
       - ./data/instance-1/hermes:/root/.hermes
@@ -50,6 +51,7 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS:-}
     volumes:
+      - ./entrypoint.sh:/root/entrypoint.sh
       - ./data/instance-2/workspace:/root/workspace
       - ./data/instance-2/chrome-data:/root/.config/google-chrome
       - ./data/instance-2/hermes:/root/.hermes
