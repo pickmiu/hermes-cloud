@@ -1,0 +1,43 @@
+version: '3.8'
+
+# 通用基础配置（YAML 锚点，多实例共用底层镜像与资源配置）
+x-hermes-base: &hermes-base
+  build: .
+  image: hermes-cloud:latest
+  shm_size: "2gb"
+  restart: unless-stopped
+
+services:
+  # ===================================================
+  # 实例 1（默认主实例）
+  # 启动命令: docker compose up -d
+  # ===================================================
+  hermes-desktop-1:
+    <<: *hermes-base
+    container_name: hermes-desktop-1
+    ports:
+      - "${PORT_INSTANCE_1:-8444}:8444"
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD_1:-HermesSecretPass123}
+    volumes:
+      - ./data/instance-1/workspace:/root/workspace
+      - ./data/instance-1/chrome-data:/root/.config/google-chrome
+
+  # ===================================================
+  # 实例 2（预留从实例）
+  # 启动命令: docker compose --profile multi up -d
+  # 或单独启动: docker compose up -d hermes-desktop-2
+  # ===================================================
+  hermes-desktop-2:
+    <<: *hermes-base
+    container_name: hermes-desktop-2
+    profiles:
+      - multi
+      - all
+    ports:
+      - "${PORT_INSTANCE_2:-8445}:8444"
+    environment:
+      - VNC_PASSWORD=${VNC_PASSWORD_2:-HermesSecretPass123}
+    volumes:
+      - ./data/instance-2/workspace:/root/workspace
+      - ./data/instance-2/chrome-data:/root/.config/google-chrome

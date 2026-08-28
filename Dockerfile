@@ -1,0 +1,73 @@
+FROM debian:trixie-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DISPLAY=:1
+ENV LANG=zh_CN.UTF-8
+ENV LANGUAGE=zh_CN:zh
+ENV LC_ALL=zh_CN.UTF-8
+
+# 1. 基础系统工具、中文字体与 X11 轻量窗口环境
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    curl \
+    gnupg \
+    git \
+    sudo \
+    locales \
+    fonts-wqy-zenhei \
+    ca-certificates \
+    libssl-dev \
+    dbus-x11 \
+    xauth \
+    x11-xserver-utils \
+    openbox \
+    tint2 \
+    xterm \
+    python3 \
+    python3-pip \
+    python3-venv \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# 生成中文字符集
+RUN echo "zh_CN.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
+
+# 2. 安装官方 Google Chrome（采用 Debian 13 标准 keyrings 路径）
+RUN mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg \
+    && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends google-chrome-stable \
+    && sed -i 's|exec -a "$0" "$HERE/chrome" "$@"|exec -a "$0" "$HERE/chrome" "$@" --no-sandbox|g' /opt/google/chrome/google-chrome \
+    && rm -rf /var/lib/apt/lists/*
+
+# 3. 安装 KasmVNC
+RUN ARCH=$(dpkg --print-architecture) && \
+    wget -q https://github.com/kasmtech/KasmVNC/releases/download/v1.3.2/kasmvncserver_bookworm_1.3.2_${ARCH}.deb -O /tmp/kasmvnc.deb \
+    && (dpkg -i /tmp/kasmvnc.deb || apt-get install -y -f) \
+    && rm -rf /tmp/kasmvnc.deb /var/lib/apt/lists/*
+
+# 4. 预创建工作目录与配置目录
+RUN mkdir -p /root/workspace /root/.config/google-chrome /root/.vnc
+
+WORKDIR /root
+
+# 5. 构建 Python 隔离虚拟环境（适配 Debian 13 PEP 668 要求），并将 venv 路径加入 PATH
+RUN python3 -m venv /root/venv \
+    && /root/venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /root/venv/bin/pip install --no-cache-dir \
+       playwright \
+       browser-use \
+       httpx \
+       python-telegram-bot
+
+ENV PATH="/root/venv/bin:$PATH"
+
+# 拷贝启动脚本
+COPY entrypoint.sh /root/entrypoint.sh
+RUN chmod +x /root/entrypoint.sh
+
+EXPOSE 8444
+
+ENTRYPOINT ["/root/entrypoint.sh"]
