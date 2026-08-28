@@ -35,6 +35,41 @@ def get_env_var(key: str, default: str = "") -> str:
     return default
 
 
+def get_public_ip() -> str:
+    """尝试快速获取公网 IP"""
+    for endpoint in ["https://api.ipify.org", "http://ifconfig.me/ip", "https://icanhazip.com"]:
+        try:
+            req = urllib.request.Request(endpoint, headers={"User-Agent": "curl/7.68.0"})
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                ip = resp.read().decode("utf-8").strip()
+                if ip and "." in ip:
+                    return ip
+        except Exception:
+            continue
+    return ""
+
+
+def get_safe_desktop_url() -> str:
+    """获取安全的 Web 桌面直达链接（严格防止 localhost 触发 Telegram 400）"""
+    url = get_env_var("REMOTE_DESKTOP_URL", "")
+    public_host = get_env_var("PUBLIC_HOST", "")
+    
+    # 若配置了 PUBLIC_HOST 且 URL 中包含 localhost，直接替换
+    if public_host and ("localhost" in url or "127.0.0.1" in url or not url):
+        url = f"https://{public_host}:8444"
+        return url
+
+    # 若未指定有效 URL 或依然包含 localhost，尝试探测公网 IP
+    if not url or "localhost" in url or "127.0.0.1" in url:
+        pub_ip = get_public_ip()
+        if pub_ip:
+            url = f"https://{pub_ip}:8444"
+        else:
+            url = ""
+            
+    return url
+
+
 def get_telegram_chat_id() -> str:
     chat_id = get_env_var("TELEGRAM_HOME_CHANNEL")
     if not chat_id:
@@ -45,11 +80,36 @@ def get_telegram_chat_id() -> str:
 
 
 def capture_desktop_screenshot(output_path: str = "/tmp/takeover_screen.png") -> str:
-    """截取当前 X11 桌面（默认 DISPLAY=:1）"""
-    display = os.environ.get("DISPLAY", ":1")
-    os.environ["DISPLAY"] = display
-    
-    # 优先使用 scrot
+    """
+    极速多后端截屏引擎（默认 DISPLAY=:1）：
+    1. Python-Xlib + PIL（毫秒级原生内存抓屏，零外部进程依赖）
+    2. scrot CLI
+    3. ImageMagick import
+    """
+    display_str = os.environ.get("DISPLAY", ":1")
+    os.environ["DISPLAY"] = display_str
+
+    # 后端 1: Python-Xlib + Pillow (极速且最稳定)
+    try:
+        from Xlib import display, X
+        from PIL import Image
+
+        d = display.Display(display_str)
+        screen = d.screen()
+        root = screen.root
+        width = screen.width_in_pixels
+        height = screen.height_in_pixels
+
+        raw = root.get_image(0, 0, width, height, X.ZPixmap, 0xffffffff)
+        image = Image.frombytes("RGB", (width, height), raw.data, "raw", "BGRX")
+        image.save(output_path, "PNG", optimize=True)
+        d.close()
+        if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+            return output_path
+    except Exception:
+        pass
+
+    # 后端 2: scrot
     try:
         res = subprocess.run(["scrot", "-z", "-q", "80", "-o", output_path], check=False, capture_output=True)
         if res.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 0:
@@ -57,7 +117,7 @@ def capture_desktop_screenshot(output_path: str = "/tmp/takeover_screen.png") ->
     except Exception:
         pass
 
-    # 备用方案：import (ImageMagick)
+    # 后端 3: import (ImageMagick)
     try:
         res = subprocess.run(["import", "-window", "root", output_path], check=False, capture_output=True)
         if res.returncode == 0 and os.path.exists(output_path) and os.path.getsize(output_path) > 0:
@@ -84,7 +144,8 @@ def send_telegram_photo(token: str, chat_id: str, photo_path: str, caption: str,
     add_field("chat_id", str(chat_id))
     add_field("caption", caption)
     add_field("parse_mode", "HTML")
-    add_field("reply_markup", json.dumps(reply_markup, ensure_ascii=False))
+    if reply_markup:
+        add_field("reply_markup", json.dumps(reply_markup, ensure_ascii=False))
 
     if photo_path and os.path.exists(photo_path):
         filename = os.path.basename(photo_path)
@@ -100,8 +161,12 @@ def send_telegram_photo(token: str, chat_id: str, photo_path: str, caption: str,
     req = urllib.request.Request(url, data=bytes(body))
     req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
     
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        error_detail = e.read().decode("utf-8") if e.fp else str(e)
+        return {"ok": False, "error_code": e.code, "description": f"HTTP {e.code}: {error_detail}"}
 
 
 def edit_telegram_caption(token: str, chat_id: str, message_id: int, caption: str, reply_markup: dict = None) -> dict:
@@ -116,8 +181,12 @@ def edit_telegram_caption(token: str, chat_id: str, message_id: int, caption: st
     }
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        error_detail = e.read().decode("utf-8") if e.fp else str(e)
+        return {"ok": False, "description": f"HTTP {e.code}: {error_detail}"}
 
 
 def answer_telegram_callback(token: str, callback_query_id: str, text: str = "已确认") -> dict:
@@ -130,8 +199,11 @@ def answer_telegram_callback(token: str, callback_query_id: str, text: str = "�
     }
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return {}
 
 
 def request_human_takeover(reason: str) -> dict:
@@ -143,7 +215,7 @@ def request_human_takeover(reason: str) -> dict:
     """
     token = get_env_var("TELEGRAM_BOT_TOKEN")
     chat_id = get_telegram_chat_id()
-    desktop_url = get_env_var("REMOTE_DESKTOP_URL", "https://localhost:8444")
+    desktop_url = get_safe_desktop_url()
 
     if not token or not chat_id:
         return {
@@ -154,24 +226,24 @@ def request_human_takeover(reason: str) -> dict:
     screenshot_path = capture_desktop_screenshot()
     action_id = f"tk_{int(time.time())}"
 
+    url_line = f"🔗 <b>桌面直达</b>：<a href=\"{desktop_url}\">{desktop_url}</a>\n\n" if desktop_url else ""
     caption = (
         f"<b>💻 Computer | ✳️ Action needed</b>\n\n"
         f"📌 <b>事项</b>：{reason}\n"
-        f"🔗 <b>桌面直达</b>：<a href=\"{desktop_url}\">{desktop_url}</a>\n\n"
+        f"{url_line}"
         f"<i>请点击下方按钮接管桌面，完成后点击【I'm done】继续。</i>"
     )
 
-    reply_markup = {
-        "inline_keyboard": [
-            [
-                {"text": "🖥️ Take over (进入桌面)", "url": desktop_url}
-            ],
-            [
-                {"text": "✅ I'm done (我已完成)", "callback_data": f"takeover:done:{action_id}"},
-                {"text": "⏭️ Skip (跳过)", "callback_data": f"takeover:skip:{action_id}"}
-            ]
-        ]
-    }
+    inline_keyboard = []
+    if desktop_url:
+        inline_keyboard.append([{"text": "🖥️ Take over (进入桌面)", "url": desktop_url}])
+    
+    inline_keyboard.append([
+        {"text": "✅ I'm done (我已完成)", "callback_data": f"takeover:done:{action_id}"},
+        {"text": "⏭️ Skip (跳过)", "callback_data": f"takeover:skip:{action_id}"}
+    ])
+
+    reply_markup = {"inline_keyboard": inline_keyboard}
 
     try:
         resp = send_telegram_photo(token, chat_id, screenshot_path, caption, reply_markup)
@@ -201,7 +273,7 @@ def request_human_takeover(reason: str) -> dict:
                 "message_id": msg_id
             }
         else:
-            return {"status": "error", "message": f"Telegram API 错误: {resp}"}
+            return {"status": "error", "message": f"Telegram API 错误: {resp.get('description', resp)}"}
     except Exception as e:
         return {"status": "error", "message": f"发送接管卡片失败: {str(e)}"}
 

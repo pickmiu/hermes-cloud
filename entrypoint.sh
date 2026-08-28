@@ -29,6 +29,10 @@ fi
 # 自动初始化 Hermes Agent 配置（OpenRouter + Browser Use + Telegram + Firecrawl + Takeover Protocol）
 > /root/.hermes/.env
 echo "DISPLAY=:1" >> /root/.hermes/.env
+echo "AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable" >> /root/.hermes/.env
+echo "AGENT_BROWSER_ARGS=--no-sandbox,--disable-dev-shm-usage,--disable-gpu,--display=:1" >> /root/.hermes/.env
+echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/google-chrome-stable" >> /root/.hermes/.env
+echo "CHROME_PATH=/usr/bin/google-chrome-stable" >> /root/.hermes/.env
 [ -n "$OPENROUTER_API_KEY" ] && echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" >> /root/.hermes/.env
 [ -n "$TELEGRAM_BOT_TOKEN" ] && echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" >> /root/.hermes/.env
 [ -n "$TELEGRAM_ALLOWED_USERS" ] && echo "TELEGRAM_ALLOWED_USERS=$TELEGRAM_ALLOWED_USERS" >> /root/.hermes/.env
@@ -47,6 +51,7 @@ terminal:
 browser:
   provider: browser-use
   headless: false
+  executable_path: /usr/bin/google-chrome-stable
 web:
   search_backend: firecrawl
   extract_backend: firecrawl

@@ -71,6 +71,8 @@ RUN python3 -m venv /root/venv \
        browser-use \
        httpx \
        python-telegram-bot \
+       python-xlib \
+       pillow \
     && git clone --depth 1 https://github.com/NousResearch/hermes-agent.git /opt/hermes-agent \
     && /root/venv/bin/pip install --no-cache-dir -e /opt/hermes-agent
 
