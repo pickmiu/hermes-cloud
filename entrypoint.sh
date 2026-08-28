@@ -14,11 +14,22 @@ export PATH="/root/venv/bin:$PATH"
 mkdir -p /etc/opt/chrome/policies/managed
 echo '{"CommandLineFlagSecurityWarningsEnabled": false, "RemoteDebuggingAllowed": true}' > /etc/opt/chrome/policies/managed/managed_policies.json
 
-# 确保系统级全局 Chrome 包装器就绪（强制附加 --no-sandbox，彻底杜绝 root 下启动崩溃）
+# 确保系统级全局 Chrome 包装器就绪（强制附加完整 CDP 调试参数与非默认 user-data-dir，彻底杜绝 root 崩溃与授权弹窗）
 cat << 'EOF' > /usr/local/bin/google-chrome
 #!/bin/bash
 export DISPLAY=${DISPLAY:-:1}
-exec /opt/google/chrome/chrome --no-sandbox --disable-dev-shm-usage --disable-gpu "$@"
+exec /opt/google/chrome/chrome \
+  --no-sandbox \
+  --disable-dev-shm-usage \
+  --disable-gpu \
+  --remote-debugging-port=9222 \
+  --remote-allow-origins=* \
+  --user-data-dir="${CHROME_USER_DATA_DIR:-/root/.config/google-chrome}" \
+  --test-type \
+  --disable-infobars \
+  --no-first-run \
+  --no-default-browser-check \
+  "$@"
 EOF
 chmod +x /usr/local/bin/google-chrome
 ln -sf /usr/local/bin/google-chrome /usr/bin/google-chrome
@@ -54,7 +65,7 @@ fi
 > /root/.hermes/.env
 echo "DISPLAY=:1" >> /root/.hermes/.env
 echo "AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable" >> /root/.hermes/.env
-echo "AGENT_BROWSER_ARGS=--no-sandbox,--disable-dev-shm-usage,--disable-gpu,--display=:1" >> /root/.hermes/.env
+echo "AGENT_BROWSER_ARGS=--no-sandbox,--disable-dev-shm-usage,--disable-gpu,--remote-debugging-port=9222,--remote-allow-origins=*,--user-data-dir=/root/.config/google-chrome,--test-type,--disable-infobars,--no-first-run,--no-default-browser-check,--display=:1" >> /root/.hermes/.env
 echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/google-chrome-stable" >> /root/.hermes/.env
 echo "CHROME_PATH=/usr/bin/google-chrome-stable" >> /root/.hermes/.env
 [ -n "$OPENROUTER_API_KEY" ] && echo "OPENROUTER_API_KEY=$OPENROUTER_API_KEY" >> /root/.hermes/.env
@@ -82,15 +93,15 @@ web:
 system_prompt: |
   你是部署在具备完整 X11 桌面与浏览器环境的自主 AI 智能体 Hermes。
   【重要人机协作准则】
-  你在操作浏览器执行任务时，遇到需要登录认证（如淘宝/京东/微信扫码登录）、短信验证码、或复杂无法绕过的人机验证码时：
+  你在操作浏览器执行任务时，遇到需要登录认证（如淘宝/京东/微信扫码登录）、短信验证码、浏览器授权弹窗、或复杂无法绕过的人机验证码时：
   1. 允许自主尝试 1~2 次；
-  2. 若无法自主突破，你必须立即使用 request_human_takeover 技能，在终端执行：
+  2. 若无法自主突破或需要人类在屏幕上点击授权/扫码，你严禁仅以纯文本回复用户，必须立即使用 request_human_takeover 技能，在终端执行：
      python3 /root/takeover_helper.py request "<需要人类协助的具体事项说明>"
   3. 这会立即截取当前桌面最新画面，并向用户的 Telegram 发送带远程桌面直达链接及 [Take over]、[I'm done] 按钮的交互卡片。
   4. 发送后，请告知用户已发送接管卡片，并耐心等待用户在 Telegram 上点击按钮，切勿盲目重复重试。
 custom_tools:
   - name: request_human_takeover
-    description: "当遇到必须人类介入（如扫码登录、手机短信验证码、复杂人机校验）且自主尝试无法解决时调用此工具向用户 Telegram 发送桌面截图与接管按钮卡片。"
+    description: "当遇到必须人类介入（如扫码登录、手机短信验证码、浏览器授权弹窗、复杂人机校验）且自主尝试无法解决时调用此工具向用户 Telegram 发送桌面截图与接管按钮卡片。"
     parameters:
       type: object
       properties:
@@ -134,7 +145,7 @@ fi
 cat << 'EOF' > /root/.hermes/skills/request_human_takeover/SKILL.md
 ---
 name: request_human_takeover
-description: 当遇到扫码登录（淘宝、支付宝、微信等）、短信验证码、手机授权、复杂人机验证码且自主尝试 1~2 次无法突破时，必须使用此技能向人类发送桌面截图和 Telegram 交互接管卡片。
+description: 当遇到扫码登录（淘宝、支付宝、微信等）、短信验证码、手机授权、浏览器弹窗授权、复杂人机验证码且自主尝试 1~2 次无法突破时，必须使用此技能向人类发送桌面截图和 Telegram 交互接管卡片。
 metadata:
   version: 1.0.0
 ---
@@ -145,7 +156,8 @@ metadata:
 当操作浏览器或执行任务遇到以下情况且自主尝试 1~2 次仍无法解决时：
 1. **扫码登录**：淘宝、京东、微信、支付宝等网页弹出登录二维码。
 2. **验证码阻拦**：复杂拼图、滑块、旋转验证码、短信验证码发到用户手机。
-3. **敏感操作**：支付密码、删除核心配置等。
+3. **授权弹窗**：浏览器提示需要用户点击授权、或者页面弹出阻塞性弹窗。
+4. **敏感操作**：支付密码、删除核心配置等。
 
 ## 执行指令
 立即在终端中执行以下命令（将具体原因作为参数传入）：
@@ -164,7 +176,7 @@ python3 /root/takeover_helper.py request "淘宝需要扫码登录，请点击�
 执行上述命令后：
 1. 系统已自动向用户 Telegram 发送了当前桌面最新截图与带 [Take over]、[I'm done]、[Skip] 按钮的卡片。
 2. 明确回复用户：“已为您发送接管卡片，请点击按钮进入桌面完成扫码，完成后点击【I'm done】”。
-3. **停止盲目重试，等待用户在 Telegram 点击按钮后的系统通知**。
+3. **严禁仅以纯文本让用户手动去桌面操作，必须调用接管卡片命令**。
 4. 收到通知后，重新获取最新页面状态并继续执行原任务。
 EOF
 
@@ -175,7 +187,7 @@ cat << 'EOF' > /root/workspace/AGENTS.md
 ## 核心准则：自主优先与人机接管 (Autonomous-First & Human Takeover)
 
 1. **自主尝试**：遇到常规表单登录或常规验证码，先自主尝试 1~2 次。
-2. **触发接管**：若遇到手机扫码（淘宝/微信/支付宝等）、短信验证码、支付或无法通过的验证码，严禁盲目重试，必须立即在终端运行：
+2. **触发接管**：若遇到手机扫码（淘宝/微信/支付宝等）、短信验证码、浏览器授权弹窗、支付或无法通过的验证码，严禁仅以纯文本回复，必须立即在终端运行：
    `python3 /root/takeover_helper.py request "<说明原因>"`
 3. 执行后告知用户接管卡片已发送，并等待用户点击 Telegram 按钮。
 EOF
@@ -194,13 +206,14 @@ cat << 'EOF' > /root/.hermes/SOUL.md
 ## 2. 触发人类接管的条件 (Human Takeover Conditions)
 只有在判定为「无法自主完成」时，才允许调用 `request_human_takeover` 技能：
 - **物理与设备阻隔**：必须手机 App 扫码（微信/支付宝/淘宝等二维码）、短信验证码发至用户手机、或需要支付密码与生物认证。
+- **授权弹窗与阻碍**：浏览器需要人工点击允许授权、弹窗确认等。
 - **自主尝试失败**：验证码识别失败或重试 1~2 次仍未通过，继续尝试可能导致封号或锁定时。
 - **环境被拦截**：遇到高强度无法绕过的人机验证盾（如 Cloudflare Turnstile）。
 
 ## 3. 接管调用规范
 - 在终端运行 `python3 /root/takeover_helper.py request "详细说明原因，例如：用淘宝扫码登录"`。
 - 系统会自动截取当前桌面画面，并向 Telegram 发送带接管 URL 与 [Take over]、[I'm done]、[Skip] 按钮的交互卡片。
-- **调用完成后，停止盲目重试，告知用户卡片已发，等待人类在 Telegram 上点击按钮**。
+- **严禁仅发文字指导用户手动操作桌面，必须发送交互卡片**。
 - 收到人类完成接管的通知后，重新抓取最新页面/屏幕状态，核验后继续完成原定任务。
 EOF
 
